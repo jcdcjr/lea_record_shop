@@ -135,7 +135,8 @@ class Disco:
 
         return None
 
-    def __validacao_quantidade(self, quantidade):
+    @staticmethod
+    def __validacao_quantidade(quantidade):
         if not quantidade:
             return 'Erro: Quantidade é obrigatória!'
 
@@ -151,7 +152,7 @@ class Disco:
             validacao_dados_disco = self.__validacao_dados_disco(disco_id, nome, artista, ano_lancamento, estilo)
 
             if validacao_dados_disco:
-                return validacao_dados_disco
+                raise validacao_dados_disco
 
             table = dynamodb.Table(self.tabela)
 
@@ -162,31 +163,31 @@ class Disco:
             self.quantidade = int(disco['quantidade'])
 
             response = self.__atualizar_dados(table)
-
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao atualizar os dados do disco. Motivo: ' + e
+            raise e
+        else:
+            return response
 
     def cadastrar(self, nome, artista, ano_lancamento, estilo, dynamodb):
-        erro_validacao = validar_disco(nome, artista, ano_lancamento, estilo)
-
-        if erro_validacao:
-            return erro_validacao
-
-        self.__montar_disco(nome, artista, ano_lancamento, estilo)
-
         try:
+            erro_validacao = validar_disco(nome, artista, ano_lancamento, estilo)
+
+            if erro_validacao:
+                raise erro_validacao
+
+            self.__montar_disco(nome, artista, ano_lancamento, estilo)
+
             table = dynamodb.Table(self.tabela)
             response = self.__inserir(table)
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao cadastrar o disco. Motivo:' + e
+            raise e
+        else:
+            return response
 
     def listar_discos(self, dynamodb, nome=None, artista=None, ano_lancamento=None, estilo=None):
-
-        table = dynamodb.Table(self.tabela)
-
         try:
+            table = dynamodb.Table(self.tabela)
+
             if not nome and not artista and not ano_lancamento and not estilo:
                 response = table.query(
                     IndexName='gsi_1',
@@ -195,43 +196,43 @@ class Disco:
                 response = table.query(
                     IndexName='gsi_1',
                     KeyConditionExpression=Key('sk').eq('DISCO'),
-                    FilterExpression=Attr('nome').contains(nome) | Attr('artista').contains(artista) |
-                                     Attr('ano_lancamento').contains(ano_lancamento) | Attr('estilo').contains(estilo)
+                    FilterExpression=(
+                            Attr('nome').contains(nome) | Attr('artista').contains(artista) |
+                            Attr('ano_lancamento').contains(ano_lancamento) | Attr('estilo').contains(estilo)
+                    )
                 )
         except ClientError as e:
             if e.response['Error']['Code'] == "ConditionalCheckFailedException":
                 print(e.response['Error']['Message'])
             else:
-                raise 'Erro: Foi encontrado um erro inesperado!'
+                raise
         else:
             return response['Items']
 
     def obter_por_id(self, disco_id, dynamodb):
-        erro_validacao = self.__validacao_disco_id(disco_id)
-
-        if erro_validacao:
-            return erro_validacao
-
-        self.disco_id = str(disco_id)
-
         try:
+            erro_validacao = self.__validacao_disco_id(disco_id)
+
+            if erro_validacao:
+                raise erro_validacao
+
             table = dynamodb.Table(self.tabela)
 
             response = self.__obter_item(table)
 
             if not response.__contains__('Item'):
                 return 'Erro: Disco nao localizado'
-
-            return response['Item']
         except Exception as e:
-            raise 'Erro: Falha ao obter o disco. Motivo: ' + e
+            raise e
+        else:
+            return response['Item']
 
     def realizar_baixa_estoque(self, disco_id, quantidade, dynamodb):
         try:
             erro_validacao_estoque = self.__validacao_estoque(disco_id, quantidade)
 
             if erro_validacao_estoque:
-                return erro_validacao_estoque
+                raise erro_validacao_estoque
 
             disco = self.obter_por_id(self.disco_id, dynamodb)
             if disco.__contains__('Erro:'):
@@ -249,17 +250,17 @@ class Disco:
             table = dynamodb.Table(self.tabela)
 
             response = self.__atualizar_estoque(table)
-
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao repor estoque. Motivo:' + e
+            raise e
+        else:
+            return response
 
     def remover(self, disco_id, dynamodb):
         try:
             erro_validacao = self.__validacao_disco_id(disco_id)
 
             if erro_validacao:
-                return erro_validacao
+                raise erro_validacao
 
             table = dynamodb.Table(self.tabela)
 
@@ -268,17 +269,17 @@ class Disco:
                 return disco
 
             response = self.__remover_disco(table)
-
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao remover o disco. Motivo: ' + e
+            raise e
+        else:
+            return response
 
     def repor_estoque_disco(self, disco_id, quantidade, dynamodb):
         try:
             erro_validacao = self.__validacao_estoque(disco_id, quantidade)
 
             if erro_validacao:
-                return erro_validacao
+                raise erro_validacao
 
             disco = self.obter_por_id(self.disco_id, dynamodb)
             if disco.__contains__('Erro:'):
@@ -291,6 +292,7 @@ class Disco:
             table = dynamodb.Table(self.tabela)
 
             response = self.__atualizar_estoque(table)
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao repor estoque. Motivo:' + e
+            raise e
+        else:
+            return response

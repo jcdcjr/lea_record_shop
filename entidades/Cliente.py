@@ -74,12 +74,13 @@ class Cliente:
             }
         )
 
-    def __validar_documento(self, documento):
+    @staticmethod
+    def __validar_documento(documento):
         if not documento:
-            raise 'Documento é obrigatório!'
+            return 'Documento é obrigatório!'
 
         if not validar_documento(documento):
-            raise 'Documento invalido!'
+            return 'Documento invalido!'
 
     def atualizar(self, nome_completo, data_nascimento, email, telefone, dynamodb):
         try:
@@ -100,41 +101,46 @@ class Cliente:
                 return 'Erro: Não é possível atualizar os dados cadastrais. Motivo: Cliente inativo'
 
             response = self.__atualizar_dados(table)
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao atualizar os dados do cliente. Motivo: ' + e
+            raise e
+        else:
+            return response
 
     def cadastrar(self, nome_completo, data_nascimento, email, telefone, dynamodb):
         try:
             erro_validacao = validar_cliente(nome_completo, data_nascimento, email, telefone)
 
             if erro_validacao:
-                return erro_validacao
-            else:
-                self.__montar_cliente(data_nascimento, email, nome_completo, telefone)
+                raise erro_validacao
+
+            self.__montar_cliente(data_nascimento, email, nome_completo, telefone)
 
             table = dynamodb.Table(self.tabela)
             response = self.__inserir(table)
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao cadastrar o cliente. Motivo: ' + e
+            raise e
+        else:
+            return response
 
     def inativar(self, dynamodb):
         try:
             table = dynamodb.Table(self.tabela)
 
             response = self.__alterar_status(table)
-            return response
         except Exception as e:
-            raise 'Erro: Falha ao inativar o cliente. Motivo: ' + e
+            raise e
+        else:
+            return response
 
     def obter_por_id(self, dynamodb):
-        table = dynamodb.Table(self.tabela)
         try:
+            table = dynamodb.Table(self.tabela)
+
             response = self.__obter_cliente(table)
+
             if not response.__contains__('Item'):
                 return 'Erro: Cliente nao localizado'
         except ClientError as e:
-            raise 'Erro: ' + e.response['Error']['Message']
+            raise e.response['Error']['Message']
         else:
             return response['Item']

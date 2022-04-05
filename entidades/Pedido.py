@@ -58,7 +58,8 @@ class Pedido:
 
         return None
 
-    def __validar_datas(self, data_inicio, data_fim):
+    @staticmethod
+    def __validar_datas(data_inicio, data_fim):
         if data_inicio:
             if not validar_data_hora_pedido(data_inicio):
                 raise 'Data início inválida!'
@@ -67,12 +68,14 @@ class Pedido:
             if not validar_data_hora_pedido(data_fim):
                 raise 'Data Fim inválida!'
 
-    def __validar_documento(self, documento):
+    @staticmethod
+    def __validar_documento(documento):
         if documento:
             if not validar_documento(documento):
                 raise 'Documento inválido!'
 
-    def __validar_parametros(self, documento, disco_id, quantidade):
+    @staticmethod
+    def __validar_parametros(documento, disco_id, quantidade):
         erro_validacao = validar_pedido(documento, disco_id, quantidade)
 
         if erro_validacao:
@@ -85,14 +88,12 @@ class Pedido:
             erro_obtencao_cliente = self.__validar_obtencao_cliente(dynamodb)
 
             if erro_obtencao_cliente:
-                return erro_obtencao_cliente
+                raise erro_obtencao_cliente
 
             erro_obtencao_disco = self.__validar_obtencao_disco(dynamodb)
 
             if erro_obtencao_disco:
-                return erro_obtencao_disco
-
-            self.data_hora = datetime.now()
+                raise erro_obtencao_disco
 
             disco = Disco()
             baixa_estoque = disco.realizar_baixa_estoque(self.disco_id, self.quantidade, dynamodb)
@@ -103,76 +104,73 @@ class Pedido:
             table = dynamodb.Table(self.tabela)
 
             response = self.__inserir(table)
-            return response
         except Exception as e:
             raise e
+        else:
+            return response
 
     def listar_pedidos(self, documento, data_inicio, data_fim, dynamodb):
         try:
             table = dynamodb.Table(self.tabela)
-
-            try:
-                if documento and not data_inicio and not data_fim:
-                    self.__validar_documento(documento)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO'),
-                        FilterExpression=Attr('cliente.documento').eq(documento)
-                    )
-                elif documento and data_inicio and data_fim:
-                    self.__validar_documento(documento)
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').between(data_inicio, data_fim),
-                        FilterExpression=Attr('cliente.documento').eq(documento)
-                    )
-                elif documento and data_inicio and not data_fim:
-                    self.__validar_documento(documento)
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').gte(data_inicio),
-                        FilterExpression=Attr('cliente.documento').eq(documento)
-                    )
-                elif documento and not data_inicio and data_fim:
-                    self.__validar_documento(documento)
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').lte(data_fim),
-                        FilterExpression=Attr('cliente.documento').eq(documento)
-                    )
-                elif not documento and not data_inicio and data_fim:
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').lte(data_fim)
-                    )
-                elif not documento and data_inicio and not data_fim:
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').gte(data_inicio)
-                    )
-                elif not documento and data_inicio and data_fim:
-                    self.__validar_documento(documento)
-                    self.__validar_datas(data_inicio, data_fim)
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').between(data_inicio, data_fim)
-                    )
-                else:
-                    response = table.query(
-                        IndexName='gsi_1',
-                        KeyConditionExpression=Key('sk').eq('PEDIDO')
-                    )
-            except ClientError as e:
-                if e.response['Error']['Code'] == "ConditionalCheckFailedException":
-                    print(e.response['Error']['Message'])
-                else:
-                    raise
+            if documento and not data_inicio and not data_fim:
+                self.__validar_documento(documento)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO'),
+                    FilterExpression=Attr('cliente.documento').eq(documento)
+                )
+            elif documento and data_inicio and data_fim:
+                self.__validar_documento(documento)
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').between(data_inicio, data_fim),
+                    FilterExpression=Attr('cliente.documento').eq(documento)
+                )
+            elif documento and data_inicio and not data_fim:
+                self.__validar_documento(documento)
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').gte(data_inicio),
+                    FilterExpression=Attr('cliente.documento').eq(documento)
+                )
+            elif documento and not data_inicio and data_fim:
+                self.__validar_documento(documento)
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').lte(data_fim),
+                    FilterExpression=Attr('cliente.documento').eq(documento)
+                )
+            elif not documento and not data_inicio and data_fim:
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').lte(data_fim)
+                )
+            elif not documento and data_inicio and not data_fim:
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').gte(data_inicio)
+                )
+            elif not documento and data_inicio and data_fim:
+                self.__validar_documento(documento)
+                self.__validar_datas(data_inicio, data_fim)
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO') & Key('data').between(data_inicio, data_fim)
+                )
             else:
-                return response['Items']
-        except Exception as e:
-            raise e
+                response = table.query(
+                    IndexName='gsi_1',
+                    KeyConditionExpression=Key('sk').eq('PEDIDO')
+                )
+        except ClientError as e:
+            if e.response['Error']['Code'] == "ConditionalCheckFailedException":
+                print(e.response['Error']['Message'])
+            else:
+                raise
+        else:
+            return response['Items']
