@@ -16,4 +16,4 @@ def atualizar(documento, nome_completo, data_nascimento, email, telefone):
 
 
 if __name__ == '__main__':
-    atualizar("11122233300", 'Maria Clementino Araujo', '1942-01-09', 'mca@teste.com', '0035697542')
+    atualizar("11122233300", 'Jose Carlos de Campos Junior', '1986-01-23', 'jcdcjr@gmail.com', '11999990000')

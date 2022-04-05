@@ -16,4 +16,5 @@ def atualizar_dados_disco(disco_Id, nome, artista, ano_lancamento, estilo):
 
 
 if __name__ == '__main__':
-    atualizar_dados_disco('', 'Preco Curto, Prazo Longo', 'Charlie Brown Jr', 1997, 'Rock')
+    atualizar_dados_disco('f081484d-b4a1-11ec-805b-085bd6526d3f', 'Preco Curto, Prazo Longo',
+                          'Charlie Brown Jr', 1997, 'Rock')

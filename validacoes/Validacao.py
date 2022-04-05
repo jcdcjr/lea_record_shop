@@ -122,10 +122,11 @@ def validar_nome_disco(nome):
 
 def validar_quantidade(quantidade):
     try:
-        res = bool(int(quantidade))
+        if bool(int(quantidade)):
+            return True
+        return int(quantidade) > 0
     except ValueError:
-        res = False
-    return res
+        return False
 
 
 def validar_pedido(documento, disco_id, quantidade):

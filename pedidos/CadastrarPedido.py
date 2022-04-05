@@ -6,8 +6,8 @@ dynamodb = boto3.resource('dynamodb', region_name="us-east-2")
 
 
 def cadastrar(documento, disco_id, quantidade):
-    pedido = Pedido(documento, disco_id, quantidade)
-    pedido_resp = pedido.cadastrar(dynamodb)
+    pedido = Pedido()
+    pedido_resp = pedido.cadastrar(documento, disco_id, quantidade, dynamodb)
 
     if not pedido_resp.__contains__('Erro:'):
         print("Pedido realizado com sucesso!")
@@ -16,4 +16,4 @@ def cadastrar(documento, disco_id, quantidade):
 
 
 if __name__ == '__main__':
-    cadastrar("11122233300", '75ea32ab-b3d8-11ec-a9a2-085bd6526d3f', 1)
+    cadastrar("11122233300", '60df5f62-b48b-11ec-8fec-085bd6526d3f', 1)

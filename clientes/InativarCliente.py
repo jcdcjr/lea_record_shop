@@ -16,4 +16,4 @@ def inativar(documento):
 
 
 if __name__ == '__main__':
-    inativar("11122233300")
+    inativar("11122255500")
